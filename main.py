@@ -18,7 +18,6 @@ class AppIcon:
         self.texture = self.load_texture(renderer, icon_path)
         self.x = x
         self.y = y
-        self.selected = False
 
     def load_texture(self, renderer, icon_path):
         image = sdlimage.IMG_Load(icon_path.encode())
@@ -28,7 +27,13 @@ class AppIcon:
         sdl2.SDL_FreeSurface(image)
         return texture
 
-    def draw(self, renderer):
+    def draw(self, renderer, is_selected=False):
+        # 高亮显示边框
+        if is_selected:
+            sdl2.SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255)
+            border_rect = sdl2.SDL_Rect(self.x - 4, self.y - 4, ICON_SIZE + 8, ICON_SIZE + 8)
+            sdl2.SDL_RenderDrawRect(renderer, border_rect)
+        # 绘制图标
         dst_rect = sdl2.SDL_Rect(self.x, self.y, ICON_SIZE, ICON_SIZE)
         sdl2.SDL_RenderCopy(renderer, self.texture, None, dst_rect)
 
@@ -63,25 +68,26 @@ class Launcher:
             if event.type == sdl2.SDL_QUIT:
                 self.running = False
             elif event.type == sdl2.SDL_KEYDOWN:
+                # 处理方向键和回车键
                 if event.key.keysym.sym == sdl2.SDLK_RIGHT:
                     self.selected_index = (self.selected_index + 1) % len(self.apps)
                 elif event.key.keysym.sym == sdl2.SDLK_LEFT:
                     self.selected_index = (self.selected_index - 1) % len(self.apps)
                 elif event.key.keysym.sym == sdl2.SDLK_RETURN:
                     self.launch_app()
+                elif event.key.keysym.sym == sdl2.SDLK_q:
+                    self.running = False  # 按 "q" 键退出
 
     def draw(self):
+        # 设置背景颜色并清屏
         sdl2.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 255)
         sdl2.SDL_RenderClear(self.renderer)
 
         # 绘制应用图标
         for i, app in enumerate(self.apps):
-            if i == self.selected_index:
-                sdl2.SDL_SetRenderDrawColor(self.renderer, 255, 255, 0, 255)  # 高亮颜色
-                border_rect = sdl2.SDL_Rect(app.x - 4, app.y - 4, ICON_SIZE + 8, ICON_SIZE + 8)
-                sdl2.SDL_RenderDrawRect(self.renderer, border_rect)
-            app.draw(self.renderer)
+            app.draw(self.renderer, is_selected=(i == self.selected_index))
 
+        # 更新显示
         sdl2.SDL_RenderPresent(self.renderer)
 
     def launch_app(self):
@@ -95,5 +101,10 @@ def load_apps(config_path):
 
 if __name__ == "__main__":
     apps = load_apps("apps.json")
-    launcher = Launcher(apps)
-    launcher.run()
+    try:
+        launcher = Launcher(apps)
+        launcher.run()
+    finally:
+        # 清理屏幕显示，防止退出后残留内容
+        sdl2.ext.quit()
+        print("\033c", end="")  # 终端清屏
