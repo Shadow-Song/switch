@@ -1,0 +1,12 @@
+[
+    {
+        "name": "App1",
+        "icon": "icons/visual studio.png",
+        "command": "/usr/bin/code"
+    },
+    {
+        "name": "App2",
+        "icon": "icons/app-store.png",
+        "command": "firefox,"
+    }
+]
